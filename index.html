@@ -74,11 +74,29 @@
   }
   .rotate-btn svg { width: 22px; height: 22px; }
   .time {
+    /* 科技感:等宽字体 + 蓝色辉光 */
+    font-family: "SF Mono", "JetBrains Mono", "Roboto Mono", "Menlo",
+                 "Courier New", monospace;
     font-size: clamp(72px, 22vw, 180px);
-    font-weight: 200;
-    letter-spacing: -0.02em;
+    font-weight: 300;
+    letter-spacing: 0.04em;
     line-height: 1;
     font-variant-numeric: tabular-nums;  /* 等宽数字,不抖动 */
+    color: #e8f4ff;
+    text-shadow:
+      0 0 18px rgba(120, 200, 255, 0.45),
+      0 0 42px rgba(80,  160, 255, 0.22),
+      0 0 80px rgba(60,  120, 255, 0.12);
+  }
+  /* 横屏旋转(90°/270°):字变大占屏幕 ~80%,隐藏秒腾出空间 */
+  .clock[data-rotation="90"] .time,
+  .clock[data-rotation="270"] .time {
+    font-size: min(80vw, 38vh);
+    font-weight: 200;
+  }
+  .clock[data-rotation="90"] #timeS,
+  .clock[data-rotation="270"] #timeS {
+    display: none;
   }
   .date {
     font-size: clamp(15px, 4vw, 22px);
@@ -95,7 +113,9 @@
 </head>
 <body>
   <div class="clock">
-    <div class="time" id="time">--:--:--</div>
+    <div class="time">
+      <span id="timeHM">--:--</span><span id="timeS">:--</span>
+    </div>
     <div class="date" id="date"></div>
   </div>
   <button id="rotateBtn" class="rotate-btn" aria-label="旋转时钟" title="旋转时钟">
@@ -109,7 +129,8 @@
   </button>
 
 <script>
-  const timeEl = document.getElementById('time');
+  const timeHM = document.getElementById('timeHM');
+  const timeS = document.getElementById('timeS');
   const dateEl = document.getElementById('date');
   const weekdays = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
 
@@ -117,7 +138,8 @@
 
   function update() {
     const now = new Date();
-    timeEl.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    timeHM.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    timeS.textContent = `:${pad(now.getSeconds())}`;
     dateEl.textContent =
       `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日  ·  ${weekdays[now.getDay()]}`;
   }
@@ -130,13 +152,11 @@
   const clock = document.querySelector('.clock');
 
   function applyRotation() {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
+    // 用 data-rotation 触发 CSS 字体规则,不再 scale 整个容器
+    clock.setAttribute('data-rotation', rotation);
     let transform = '';
     if (rotation === 90 || rotation === 270) {
-      // 旋转 90/270° 时,按视口宽高比缩放,避免内容左右溢出
-      const scale = Math.min(w / h, 1);
-      transform = `rotate(${rotation}deg) scale(${scale})`;
+      transform = `rotate(${rotation}deg)`;
     } else if (rotation === 180) {
       transform = 'rotate(180deg)';
     }
