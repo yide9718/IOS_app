@@ -77,7 +77,7 @@
     /* 科技感:等宽字体 + 蓝色辉光 */
     font-family: "SF Mono", "JetBrains Mono", "Roboto Mono", "Menlo",
                  "Courier New", monospace;
-    font-size: clamp(72px, 22vw, 180px);
+    font-size: clamp(60px, 18vw, 150px);  /* 默认值,JS 会按实际宽度精确调整 */
     font-weight: 300;
     letter-spacing: 0.04em;
     line-height: 1;
@@ -88,10 +88,10 @@
       0 0 42px rgba(80,  160, 255, 0.22),
       0 0 80px rgba(60,  120, 255, 0.12);
   }
-  /* 横屏旋转(90°/270°):字变大占屏幕 ~80%,隐藏秒腾出空间 */
+  /* 横屏旋转(90°/270°):隐藏秒腾出空间;字号由 JS 按实际宽度精确调整 */
   .clock[data-rotation="90"] .time,
   .clock[data-rotation="270"] .time {
-    font-size: min(80vw, 38vh);
+    font-size: min(55vw, 28vh);
     font-weight: 200;
   }
   .clock[data-rotation="90"] #timeS,
@@ -151,6 +151,23 @@
   const rotateBtn = document.getElementById('rotateBtn');
   const clock = document.querySelector('.clock');
 
+  // 按实际渲染宽度调整字号,保证字符串始终能完整显示
+  function adjustTimeSize() {
+    const time = document.querySelector('.time');
+    time.style.fontSize = '';  // 先回到 CSS 默认值
+    void time.offsetWidth;     // 强制 reflow
+    // 旋转 90/270° 时,字符串横向排列的宽度对应视口的"高度方向"
+    // 0/180° 时对应视口的"宽度方向"
+    const bound = (rotation === 90 || rotation === 270)
+                  ? window.innerHeight
+                  : window.innerWidth;
+    const maxWidth = bound * 0.88;  // 两侧各留 6% 边距
+    if (time.offsetWidth > maxWidth) {
+      const current = parseFloat(getComputedStyle(time).fontSize);
+      time.style.fontSize = (current * maxWidth / time.offsetWidth) + 'px';
+    }
+  }
+
   function applyRotation() {
     // 用 data-rotation 触发 CSS 字体规则,不再 scale 整个容器
     clock.setAttribute('data-rotation', rotation);
@@ -161,7 +178,10 @@
       transform = 'rotate(180deg)';
     }
     clock.style.transform = transform;
+    adjustTimeSize();
   }
+
+  applyRotation();  // 初始化(也会触发首次字号调整)
 
   rotateBtn.addEventListener('click', (e) => {
     e.stopPropagation();
