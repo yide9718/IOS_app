@@ -45,7 +45,34 @@
     /* 适配 iPhone 刘海/圆角 */
     padding: env(safe-area-inset-top) env(safe-area-inset-right)
              env(safe-area-inset-bottom) env(safe-area-inset-left);
+    transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: center center;
   }
+  /* 旋转按钮 */
+  .rotate-btn {
+    position: fixed;
+    top: max(env(safe-area-inset-top), 16px);
+    right: max(env(safe-area-inset-right), 16px);
+    width: 44px;
+    height: 44px;
+    border: none;
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.55);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 100;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    transition: background 0.2s, color 0.2s;
+  }
+  .rotate-btn:active {
+    background: rgba(255,255,255,0.18);
+    color: rgba(255,255,255,0.95);
+  }
+  .rotate-btn svg { width: 22px; height: 22px; }
   .time {
     font-size: clamp(72px, 22vw, 180px);
     font-weight: 200;
@@ -71,6 +98,15 @@
     <div class="time" id="time">--:--:--</div>
     <div class="date" id="date"></div>
   </div>
+  <button id="rotateBtn" class="rotate-btn" aria-label="旋转时钟" title="旋转时钟">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+         stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 2v6h-6"/>
+      <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
+      <path d="M3 22v-6h6"/>
+      <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
+    </svg>
+  </button>
 
 <script>
   const timeEl = document.getElementById('time');
@@ -88,7 +124,33 @@
   update();
   setInterval(update, 1000);
 
-  // 防止屏幕自动休眠(iOS 17+ 支持 Screen Wake Lock API)
+  // === 旋转控制:每点一次按钮转 90°,循环 0→90→180→270→0 ===
+  let rotation = 0;
+  const rotateBtn = document.getElementById('rotateBtn');
+  const clock = document.querySelector('.clock');
+
+  function applyRotation() {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    let transform = '';
+    if (rotation === 90 || rotation === 270) {
+      // 旋转 90/270° 时,按视口宽高比缩放,避免内容左右溢出
+      const scale = Math.min(w / h, 1);
+      transform = `rotate(${rotation}deg) scale(${scale})`;
+    } else if (rotation === 180) {
+      transform = 'rotate(180deg)';
+    }
+    clock.style.transform = transform;
+  }
+
+  rotateBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    rotation = (rotation + 90) % 360;
+    applyRotation();
+  });
+  window.addEventListener('resize', applyRotation);
+
+  // === 防止屏幕自动休眠(iOS 17+ 支持 Screen Wake Lock API) ===
   let wakeLock = null;
   async function requestWakeLock() {
     try {
