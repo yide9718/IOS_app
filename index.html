@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>时钟</title>
+
+<!-- iOS PWA: 添加到主屏幕后全屏运行 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="时钟">
+<meta name="format-detection" content="telephone=no">
+
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #000;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
+                 "Helvetica Neue", "PingFang SC", sans-serif;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .clock {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    /* 适配 iPhone 刘海/圆角 */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right)
+             env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .time {
+    font-size: clamp(72px, 22vw, 180px);
+    font-weight: 200;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;  /* 等宽数字,不抖动 */
+  }
+  .date {
+    font-size: clamp(15px, 4vw, 22px);
+    font-weight: 300;
+    color: rgba(255,255,255,0.55);
+    margin-top: 1.4em;
+    letter-spacing: 0.1em;
+  }
+  /* 横屏时缩小一点 */
+  @media (orientation: landscape) {
+    .time { font-size: clamp(56px, 16vw, 150px); }
+  }
+</style>
+</head>
+<body>
+  <div class="clock">
+    <div class="time" id="time">--:--:--</div>
+    <div class="date" id="date"></div>
+  </div>
+
+<script>
+  const timeEl = document.getElementById('time');
+  const dateEl = document.getElementById('date');
+  const weekdays = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
+
+  const pad = n => String(n).padStart(2, '0');
+
+  function update() {
+    const now = new Date();
+    timeEl.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    dateEl.textContent =
+      `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日  ·  ${weekdays[now.getDay()]}`;
+  }
+  update();
+  setInterval(update, 1000);
+
+  // 防止屏幕自动休眠(iOS 17+ 支持 Screen Wake Lock API)
+  let wakeLock = null;
+  async function requestWakeLock() {
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+    } catch (e) { /* 不支持就忽略 */ }
+  }
+  requestWakeLock();
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') requestWakeLock();
+  });
+</script>
+</body>
+</html>
